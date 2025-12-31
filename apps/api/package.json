@@ -1,0 +1,33 @@
+{
+  "name": "@polymarket-mirror/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma": "prisma",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@polymarket-mirror/shared": "workspace:*",
+    "@polymarket/clob-client": "^6.9.0",
+    "@prisma/client": "^5.8.1",
+    "bullmq": "^5.1.8",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.10.0",
+    "fastify": "^4.25.2",
+    "ioredis": "^5.3.2",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
+    "ws": "^8.16.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/ws": "^8.5.10",
+    "prisma": "^5.8.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

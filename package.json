@@ -1,0 +1,26 @@
+{
+  "name": "polymarket-mirror-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production Polymarket copy trading bot with dashboard",
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm --filter './apps/*' build",
+    "start": "pnpm --parallel --filter './apps/*' start",
+    "db:migrate": "pnpm --filter api prisma migrate dev",
+    "db:generate": "pnpm --filter api prisma generate",
+    "db:studio": "pnpm --filter api prisma studio",
+    "lint": "pnpm --filter './apps/*' lint",
+    "clean": "pnpm --filter './apps/*' --filter './packages/*' clean"
+  },
+  "keywords": [
+    "polymarket",
+    "trading",
+    "copy-trading",
+    "bot"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InputType {
+  WALLET
+  USERNAME
+}
+
+enum EventSource {
+  RTDS
+  DATA_API
+}
+
+enum CopyMode {
+  NOTIONAL
+  FIXED
+}
+
+enum MirrorIntentStatus {
+  PENDING
+  SKIPPED
+  SIMULATED
+  PLACED
+  FILLED
+  PARTIAL
+  CANCELLED
+  FAILED
+}
+
+model Leader {
+  id         String    @id @default(uuid())
+  label      String
+  inputValue String    @map("input_value")
+  inputType  InputType @map("input_type")
+  proxyWallet String   @map("proxy_wallet")
+  enabled    Boolean   @default(true)
+  copyEnabled Boolean  @default(false) @map("copy_enabled")
+
+  // Sizing
+  copyMode   CopyMode @default(NOTIONAL) @map("copy_mode")
+  multiplier Float    @default(1.0)
+  fixedUsdc  Float    @default(10.0) @map("fixed_usdc")
+
+  // Risk limits
+  maxUsdcPerTrade      Float @default(25.0) @map("max_usdc_per_trade")
+  maxUsdcPerDay        Float @default(250.0) @map("max_usdc_per_day")
+  maxOpenUsdcTotal     Float @default(500.0) @map("max_open_usdc_total")
+  maxOpenUsdcPerMarket Float @default(100.0) @map("max_open_usdc_per_market")
+
+  // Execution parameters
+  slippageBps              Int @default(50) @map("slippage_bps")
+  maxSpreadBps             Int @default(300) @map("max_spread_bps")
+  leaderPriceDeviationBps  Int @default(200) @map("leader_price_deviation_bps")
+  minTopOfBookUsdc         Float @default(50.0) @map("min_top_of_book_usdc")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  events        LeaderEvent[]
+  dailyCounters DailyCounter[]
+
+  @@index([proxyWallet])
+  @@index([copyEnabled])
+  @@map("leaders")
+}
+
+model LeaderEvent {
+  id          String      @id @default(uuid())
+  leaderId    String      @map("leader_id")
+  eventUid    String      @map("event_uid")
+  source      EventSource
+  type        String
+  conditionId String?     @map("condition_id")
+  tokenId     String?     @map("token_id")
+  outcome     String?
+  side        String?
+  price       Float?
+  size        Float?
+  usdcSize    Float?      @map("usdc_size")
+  txHash      String?     @map("tx_hash")
+  occurredAt  DateTime    @map("occurred_at")
+  seenAt      DateTime    @default(now()) @map("seen_at")
+  rawJson     Json        @map("raw_json")
+
+  leader       Leader         @relation(fields: [leaderId], references: [id], onDelete: Cascade)
+  mirrorIntent MirrorIntent?
+
+  @@unique([leaderId, eventUid])
+  @@index([leaderId, occurredAt(sort: Desc)])
+  @@index([conditionId])
+  @@index([tokenId])
+  @@map("leader_events")
+}
+
+model MirrorIntent {
+  id             String              @id @default(uuid())
+  leaderEventId  String              @unique @map("leader_event_id")
+  status         MirrorIntentStatus
+  reason         String?
+  computed       Json?
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  leaderEvent LeaderEvent @relation(fields: [leaderEventId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@map("mirror_intents")
+}
+
+model Order {
+  id              String    @id @default(uuid())
+  mirrorIntentId  String    @map("mirror_intent_id")
+  clobOrderId     String?   @map("clob_order_id")
+  status          String
+  placedAt        DateTime? @map("placed_at")
+  rawJson         Json      @map("raw_json")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  mirrorIntent MirrorIntent @relation(fields: [mirrorIntentId], references: [id], onDelete: Cascade)
+  fills        Fill[]
+
+  @@index([mirrorIntentId])
+  @@map("orders")
+}
+
+model Fill {
+  id       String   @id @default(uuid())
+  orderId  String   @map("order_id")
+  fillJson Json     @map("fill_json")
+  filledAt DateTime @default(now()) @map("filled_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("fills")
+}
+
+model MarketCache {
+  conditionId String   @id @map("condition_id")
+  marketJson  Json     @map("market_json")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("market_cache")
+}
+
+model DailyCounter {
+  leaderId     String   @map("leader_id")
+  day          DateTime @db.Date
+  usdcMirrored Float    @default(0.0) @map("usdc_mirrored")
+
+  leader Leader @relation(fields: [leaderId], references: [id], onDelete: Cascade)
+
+  @@unique([leaderId, day])
+  @@map("daily_counters")
+}
