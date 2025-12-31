@@ -52,28 +52,33 @@ export class PolymarketClobClient {
 
     logger.info('Initializing CLOB client with L2 auth');
 
-    const wallet = new ethers.Wallet(this.config.privateKey);
+    try {
+      const wallet = new ethers.Wallet(this.config.privateKey);
 
-    // Step 1: Create client with L1 credentials
-    const clientL1 = new ClobClient(
-      this.config.host,
-      this.config.chainId as Chain,
-      wallet
-    );
+      // Step 1: Create client with L1 credentials
+      const clientL1 = new ClobClient(
+        this.config.host,
+        this.config.chainId as Chain,
+        wallet
+      );
 
-    // Step 2: Derive or create API key (L2 credentials)
-    logger.debug('Creating or deriving API key');
-    const apiCreds = await clientL1.createOrDeriveApiKey();
+      // Step 2: Derive or create API key (L2 credentials)
+      logger.debug('Creating or deriving API key');
+      const apiCreds = await clientL1.createOrDeriveApiKey();
 
-    // Step 3: Re-initialize with L2 credentials
-    this.client = new ClobClient(
-      this.config.host,
-      this.config.chainId as Chain,
-      wallet,
-      apiCreds as ApiKeyCreds
-    );
+      // Step 3: Re-initialize with L2 credentials
+      this.client = new ClobClient(
+        this.config.host,
+        this.config.chainId as Chain,
+        wallet,
+        apiCreds as ApiKeyCreds
+      );
 
-    logger.info('CLOB client initialized with L2 auth');
+      logger.info('CLOB client initialized with L2 auth');
+    } catch (error) {
+      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to initialize CLOB client');
+      throw new Error(`CLOB initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async connectMarketChannel(): Promise<void> {
