@@ -123,10 +123,14 @@ export const dataApiTradeSchema = z.object({
   outcome: z.string().optional(),
 });
 
-export const dataApiTradesResponseSchema = z.object({
-  data: z.array(dataApiTradeSchema).optional(),
-  next_cursor: z.string().optional(),
-});
+// Polymarket Data API can return either an array directly or an object with data field
+export const dataApiTradesResponseSchema = z.union([
+  z.array(dataApiTradeSchema),
+  z.object({
+    data: z.array(dataApiTradeSchema).optional(),
+    next_cursor: z.string().optional(),
+  }),
+]);
 
 // RTDS message schemas
 export const rtdsMessageSchema = z.object({

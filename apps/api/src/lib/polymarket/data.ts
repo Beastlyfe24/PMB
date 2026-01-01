@@ -53,7 +53,11 @@ export class DataApiClient {
     const data = await this.fetchWithRetry(url);
     const validated = dataApiTradesResponseSchema.parse(data);
 
-    const trades: Trade[] = (validated.data ?? []).map(t => ({
+    // Handle both array format and object format
+    const tradesArray = Array.isArray(validated) ? validated : (validated.data ?? []);
+    const nextCursor = Array.isArray(validated) ? undefined : validated.next_cursor;
+
+    const trades: Trade[] = tradesArray.map(t => ({
       id: t.id,
       assetId: t.asset_id,
       side: t.side,
@@ -65,11 +69,11 @@ export class DataApiClient {
       traderAddress: t.trader_address,
     }));
 
-    logger.debug({ tradeCount: trades.length, nextCursor: validated.next_cursor }, 'Trades fetched');
+    logger.debug({ tradeCount: trades.length, nextCursor }, 'Trades fetched');
 
     return {
       trades,
-      nextCursor: validated.next_cursor,
+      nextCursor,
     };
   }
 
